@@ -16,7 +16,6 @@ def prepare_src_tar(gpdb_version: str):
                 WORK_DIR / gpdb_src_filename,
             ]
         )
-    run_cmd(["make", "-C", TOP_DIR / "src", "install"])
     dbfarmer_src_filename = "dbfarmer_src.tar.gz"
     run_cmd(
         ["tar", "-czvf", WORK_DIR / dbfarmer_src_filename, "-C", TOP_DIR / "src", "."]
@@ -44,7 +43,8 @@ def build_image(args: Namespace):
             "--file",
             WORK_DIR / "dockerfile",
             WORK_DIR,
-        ]
+        ],
+        dry_run=args.dry_run,
     )
 
 
@@ -138,7 +138,7 @@ def make_compose_file(port: int, num_segments: int):
         stderr=STDOUT,
         check=True,
         shell=True,
-        text=True,
+        universal_newlines=True,
         cwd=TOP_DIR,
         executable="/bin/bash",
     )
@@ -149,19 +149,25 @@ def down(args):
     cmd = ["docker", "compose", "-f", WORK_DIR / "compose.yaml", "down"]
     if args.remove_data:
         cmd.append("--volumes")
-    run_cmd(cmd)
+    run_cmd(cmd, dry_run=args.dry_run)
 
 
 def up(args: Namespace):
     print(make_compose_file(args.port, args.num_segments))
-    p = Popen(["docker", "compose", "-f", WORK_DIR / "compose.yaml", "up"], text=True)
+    cmd = ["docker", "compose", "-f", WORK_DIR / "compose.yaml", "up"]
+    if args.dry_run:
+        print(f"Running {cmd}")
+        return
+    p = Popen(cmd, universal_newlines=True)
     print(p)
     health_check(args.port)
 
 
 if __name__ == "__main__":
+    subcommands = {"up": up, "down": down, "build": build_image}
     args = define_and_parse_args(
         "Define and manage database clusters in local containers",
         "定义和管理运行在您本地容器中的数据库集群",
-        subcommands={"up": up, "down": down, "build": build_image},
+        subcommands,
     )
+    subcommands[args.subcommand](args)

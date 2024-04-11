@@ -1,22 +1,30 @@
+import sys
+
+assert sys.version_info >= (3, 6), f"Python version >= 3.6 is required."
+
 from argparse import ArgumentParser, Namespace, ArgumentDefaultsHelpFormatter
 from subprocess import CompletedProcess, CalledProcessError, STDOUT, run, Popen, PIPE
 from pathlib import Path
 import os
 from socket import gethostname
-import sys
 from time import sleep
-from typing import Any, Callable, Optional
+from typing import Any, Callable, List, Dict, Optional
 
 
 def run_cmd(
-    cmd: list[str], retry_interval: int = -1, capture_output: bool = False
-) -> CompletedProcess:
+    cmd: List[str],
+    retry_interval: int = -1,
+    capture_output: bool = False,
+    dry_run: bool = False,
+) -> Optional[CompletedProcess]:
     while True:
         try:
-            # print(f"Running {cmd} ...")
+            if dry_run:
+                print(f"Running {cmd}")
+                return None
             return run(
                 cmd,
-                text=True,
+                universal_newlines=True,
                 stdout=PIPE if capture_output else None,
                 stderr=STDOUT,
                 check=True,
@@ -35,7 +43,7 @@ WORK_DIR = TOP_DIR / "container"
 LOCAL_DATA_DIR = TOP_DIR / "pgdata"
 
 
-def start_server(contentid: int, env: dict[str, str]):
+def start_server(contentid: int, env: Dict[str, str]):
     merged_env = os.environ.copy()
     for k, v in env.items():
         merged_env[k] = v
@@ -47,7 +55,7 @@ def start_server(contentid: int, env: dict[str, str]):
     f = open(log_dir / f"startup_{contentid}.log", "w")
     p = Popen(
         ["bash", WORK_DIR / "entrypoint.sh"],
-        text=True,
+        universal_newlines=True,
         stdout=f,
         stderr=f,
         env=merged_env,
@@ -98,7 +106,7 @@ def health_check(port: int):
 def define_and_parse_args(
     description: str,
     chinese_description: str,
-    subcommands: dict[str, Callable[[Namespace], Any]],
+    subcommands: Dict[str, Callable[[Namespace], Any]],
 ):
     help_in_chinese = (
         "DBFARMER_LANG" in os.environ
@@ -108,6 +116,7 @@ def define_and_parse_args(
         description=chinese_description if help_in_chinese else description,
         formatter_class=ArgumentDefaultsHelpFormatter,
     )
+    parser.add_argument("--dry-run", action="store_true", default=False)
     helps = (
         {
             "up": "创建并启动一个数据库集群",
@@ -129,9 +138,7 @@ def define_and_parse_args(
             "--server-version": "version of the database server program",
         }
     )
-    subparsers = parser.add_subparsers(
-        title="subcommands", required=not help_in_chinese, dest="subcommand"
-    )
+    subparsers = parser.add_subparsers(title="subcommands", dest="subcommand")
     parser_up = subparsers.add_parser(
         "up",
         description=helps["up"],
@@ -163,8 +170,7 @@ def define_and_parse_args(
         )
 
     args = parser.parse_args(args=None if len(sys.argv) > 1 else ["--help"])
-    if args.subcommand is not None:
-        subcommands[args.subcommand](args)
+    assert args.subcommand is not None, "Subcommand is missing"
 
     return args
 
@@ -188,8 +194,11 @@ def down(args: Namespace):
 
 
 if __name__ == "__main__":
+    subcommands = {"up": up, "down": down}
     args = define_and_parse_args(
         "Define and manage database clusters on your localhost",
         "定义和管理运行在您本机上的数据库集群",
-        subcommands={"up": up, "down": down},
+        subcommands,
     )
+    assert not args.dry_run, "Dry run is not supported yet"
+    subcommands[args.subcommand](args)
