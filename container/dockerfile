@@ -1,0 +1,19 @@
+FROM debian:12-slim
+
+LABEL org.opencontainers.image.title="dbfarmer-for-gpdb" \
+    org.opencontainers.image.description="Externally-managed clusters for Greenplum" \
+    org.opencontainers.image.authors="Xuebin Su, xuebinsu@outlook.com" \
+    org.opencontainers.image.source="https://github.com/xuebinsu/dbfarmer"
+
+ARG user
+ENV PGUSER=${user}
+
+ARG server_version
+
+COPY build_image.sh gpdb_src-${server_version}.tar.gz dbfarmer_src.tar.gz /tmp/
+RUN bash /tmp/build_image.sh /tmp
+
+USER $user
+WORKDIR /home/$user
+COPY --chown=$user:$user entrypoint.sh ./
+CMD ["bash", "entrypoint.sh"]

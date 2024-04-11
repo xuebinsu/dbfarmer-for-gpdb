@@ -1,0 +1,3 @@
+comment = 'Externally-managed clusters for Greenplum'
+default_version = '1.0'
+superuser = true
