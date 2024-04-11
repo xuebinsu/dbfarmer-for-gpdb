@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace, ArgumentDefaultsHelpFormatter
 from subprocess import CompletedProcess, CalledProcessError, STDOUT, run, Popen, PIPE
 from pathlib import Path
 import os
@@ -105,7 +105,8 @@ def define_and_parse_args(
         and os.environ["DBFARMER_LANG"].split(".")[0] == "zh_CN"
     )
     parser = ArgumentParser(
-        description=chinese_description if help_in_chinese else description
+        description=chinese_description if help_in_chinese else description,
+        formatter_class=ArgumentDefaultsHelpFormatter,
     )
     helps = (
         {
@@ -131,22 +132,35 @@ def define_and_parse_args(
     subparsers = parser.add_subparsers(
         title="subcommands", required=not help_in_chinese, dest="subcommand"
     )
-    parser_up = subparsers.add_parser("up", description=helps["up"], help=helps["up"])
+    parser_up = subparsers.add_parser(
+        "up",
+        description=helps["up"],
+        help=helps["up"],
+        formatter_class=ArgumentDefaultsHelpFormatter,
+    )
     parser_up.add_argument("--port", type=int, help=helps["--port"], default=12345)
     parser_up.add_argument(
         "--num-segments", type=int, help=helps["--num-segments"], default=1
     )
     parser_down = subparsers.add_parser(
-        "down", description=helps["down"], help=helps["down"]
+        "down",
+        description=helps["down"],
+        help=helps["down"],
+        formatter_class=ArgumentDefaultsHelpFormatter,
     )
     parser_down.add_argument(
         "--remove-data", action="store_true", help=helps["--remove-data"]
     )
     if "build" in subcommands:
         parser_build = subparsers.add_parser(
-            "build", description=helps["build"], help=helps["build"]
+            "build",
+            description=helps["build"],
+            help=helps["build"],
+            formatter_class=ArgumentDefaultsHelpFormatter,
         )
-        parser_build.add_argument("--server-version", help=helps["--server-version"], default="7.1.0")
+        parser_build.add_argument(
+            "--server-version", help=helps["--server-version"], default="7.1.0"
+        )
 
     args = parser.parse_args(args=None if len(sys.argv) > 1 else ["--help"])
     if args.subcommand is not None:
