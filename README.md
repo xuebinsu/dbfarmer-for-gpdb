@@ -26,15 +26,39 @@ In some common Linux distributions (e.g. Debian 12), venv is provided separately
 
 在一些常见的 Linux 发行版（如 Debian 12）中，venv 模块是以 `python3-venv` 包单独提供的。
 
+You can run the following command to make sure that venv is installed successfully.
+
+您可以运行以下命令验证 venv 模块已经成功安装：
+
+```
+~/dbfarmer$ python3 -m venv -h
+usage: venv [-h] [--system-site-packages] [--symlinks | --copies] [--clear] [--upgrade] [--without-pip] [--prompt PROMPT] [--upgrade-deps] ENV_DIR [ENV_DIR ...]
+
+Creates virtual Python environments in one or more target directories.
+```
+
+
 ### Installing Container Engine 安装容器引擎
 
 Docker Compose V2, or any compatible engine is required.
 
 需要安装 Docker Compose V2 或任何与之兼容的容器引擎。
 
-Please make sure `docker` is in the environment variable `PATH`.
+It is required that the current user is not root user and is able to use the `docker compose` command:
 
-请确认 `docker` 在环境变量 `PATH` 包含的路径中。
+要求当前用户不是 root 用户，且能使用 `docker compose` 命令：
+
+```
+~/dbfarmer$ docker compose --help
+
+Usage:  docker compose [OPTIONS] COMMAND
+
+Define and run multi-container applications with Docker
+```
+
+One way to achieve this is to add the current user to the `docker` group. Please refer to [this doc](https://docs.docker.com/engine/install/linux-postinstall/) for more details.
+
+达成这一点的一个简单的方法是将当前用户加入 `docker` 组中。详情请参考[这篇文档](https://docs.docker.com/engine/install/linux-postinstall/)。
 
 ### (Optional) Installing Greenplum Server （可选）安装 Greenplum 服务器
 
@@ -132,3 +156,22 @@ options:
 For running clusters with native processes, you might want to use the `local.py` utility. Its usage is similar to `compose.py`.
 
 当您要以本地进程运行集群时，您可以运行 `local.py` 工具程序。其用法与 `compose.py` 类似。
+
+
+## 连接到集群 Connecting to the Cluster
+
+After starting the cluster with the `up` subcommand, you will be able to connect to the cluster with the `psql` command:
+
+当使用 `up` 子命令启动集群后，您可以使用 `psql` 命令连接到该集群：
+
+```
+~/dbfarmer$ psql postgres -h localhost -p 12345
+psql (12.12)
+Type "help" for help.
+
+postgres=# 
+```
+
+If you set `--port=PORT` when running the `up` subcommand, please replace the `12345` in the command above with the `PORT` value.
+
+如果您在运行 `up` 子命令时设置了 `--port=PORT`，请将上面命令中的 `12345` 替换为 `PORT` 的值。
